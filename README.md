@@ -1,2 +1,4 @@
 # UnityDotsMusicRoad
-Example of Unity DOTS combined with Hight Definition Render Pipeline and custom Raycast lib
+Example of Unity DOTS
+Uses Unity Hight Definition Render Pipeline 
+Create custom raycast functions to use with DOTS
