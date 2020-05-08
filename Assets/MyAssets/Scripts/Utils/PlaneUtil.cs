@@ -120,27 +120,13 @@ public static class PlaneCollisionUtility
             linePointA.y + deltaScaled.y,
             linePointA.z + deltaScaled.z);
 
-        var iPoint = float3.zero;
-        IsInPlaneLimits(plane, hitPoint, out iPoint);
-
-        interceptionPoint = iPoint;
-
-        return true;
+        return IsInPlaneLimits(plane, hitPoint, out interceptionPoint);
     }
+
 
     private static bool IsInPlaneLimits(PlaneStruct plane, float3 hitPoint, out float3 interceptionPoint)
     {
-        Gizmos.color = Color.white;
-        Gizmos.DrawWireCube(plane.PointA, Vector3.one * 0.05f);
-        Gizmos.DrawWireCube(plane.PointB, Vector3.one * 0.05f);
-        Gizmos.DrawWireCube(plane.PointC, Vector3.one * 0.05f);
-
-        Debug.DrawLine(plane.PointA, plane.PointB, Color.gray);
-        Debug.DrawLine(plane.PointA, plane.PointC, Color.gray);
-
-        Debug.DrawLine(plane.PointA, hitPoint, Color.magenta);
-        Debug.DrawLine(plane.PointB, plane.PointC, Color.yellow);
-
+       
         //Compute J component of the collision
 
         var d = plane.PointA - hitPoint;
@@ -203,24 +189,27 @@ public static class PlaneCollisionUtility
 
         if (!converge)
             return false;
+        
+        var dInterception = plane.PointA - interceptionPoint;
 
-        //Compute i component of the collision
-        var i = -1f;
-        if(d.x != 0f)
-        {
-            i = (plane.PointB.x + g.x * j - plane.PointA.x) / d.x;
-        }
-        else if (d.y != 0)
-        {
-            i = (plane.PointB.y + g.y * j - plane.PointA.y) / d.y;
-        }
-        else if(d.z != 0)
-        {
-            i = (plane.PointB.z + g.z * j - plane.PointA.z) / d.z;
-        }
+        var dInterceptionSqrtMagnitude = math.pow(dInterception.x, 2) + math.pow(dInterception.y, 2) + math.pow(dInterception.z, 2);
+        var dSqrtMagnitude = math.pow(d.x, 2) + math.pow(d.y, 2) + math.pow(d.z, 2);
+        var dDot = math.dot(dInterception, d);
+        
+        var gInterception = plane.PointB - interceptionPoint;
 
-        return false;
-        //return (i > 0 && i < d);
+        var gInterceptionSqrtMagnitude = math.pow(gInterception.x, 2) + math.pow(gInterception.y, 2) + math.pow(gInterception.z, 2);
+        var gSqrtMagnitude = math.pow(g.x, 2) + math.pow(g.y, 2) + math.pow(g.z, 2);
+        var gDot = math.dot(gInterception, g);
+        
+        var isInsidePlaneLimits = 
+            (gDot > 0f) && 
+            (gInterceptionSqrtMagnitude < gSqrtMagnitude) &&
+            (dDot > 0f) &&
+            (dInterceptionSqrtMagnitude > dSqrtMagnitude);
+        
+        return isInsidePlaneLimits;
+
     }
 
     /// <summary>

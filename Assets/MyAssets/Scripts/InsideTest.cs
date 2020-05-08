@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class InsideTest : MonoBehaviour
 {
-    [Range(0, 10)]
+    [Range(0, 200)]
     [SerializeField] private int _displayIndexValue;
     [SerializeField] private Mesh _mesh;
     private CollisionUtility _collisionUtility;
@@ -23,10 +23,9 @@ public class InsideTest : MonoBehaviour
 
     public void OnDrawGizmos()
     {
-        /*
         if (!Application.isPlaying)
             return;
-        */
+        
         if (_collisionUtility == null)
             _collisionUtility = new CollisionUtility();
 

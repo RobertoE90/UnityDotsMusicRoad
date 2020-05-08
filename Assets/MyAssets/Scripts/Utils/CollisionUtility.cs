@@ -36,7 +36,7 @@ public class CollisionUtility
         if (_planes == null)
             return false;
 
-        var hitCounter = 0;
+        //var hitCounter = 0;
 
         var hit = false;
 
@@ -55,15 +55,31 @@ public class CollisionUtility
                 out hitPoint,
                 out lineInterception);
 
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(hitPoint, 0.05f);
-
-            Gizmos.color = new Color(0.5f, 0f, 0f);
-            Gizmos.DrawWireCube(lineInterception, Vector3.one * 0.05f);
-
+            DrawPlaneGizmos(_planes[j], hitPoint, lineInterception, hit);
         }
 
-
         return hit;
+    }
+
+    private void DrawPlaneGizmos(PlaneStruct plane, float3 hitPoint, float3 lineInterception, bool hit)
+    {
+
+        Gizmos.color = Color.white;
+        Gizmos.DrawWireCube(plane.PointA, Vector3.one * 0.05f);
+        Gizmos.DrawWireCube(plane.PointB, Vector3.one * 0.05f);
+        Gizmos.DrawWireCube(plane.PointC, Vector3.one * 0.05f);
+
+        Gizmos.color = Color.gray;
+        Gizmos.DrawLine(plane.PointA, plane.PointB);
+        Gizmos.DrawLine(plane.PointA, plane.PointC);
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawLine(plane.PointB, plane.PointC);
+        Gizmos.color = Color.magenta;
+        Gizmos.DrawLine(plane.PointA, hitPoint);
+
+        Gizmos.color = hit ? Color.red : Color.blue;
+        Gizmos.DrawWireSphere(hitPoint, 0.05f);
+        Gizmos.DrawWireCube(lineInterception, Vector3.one * 0.05f);
     }
 }
