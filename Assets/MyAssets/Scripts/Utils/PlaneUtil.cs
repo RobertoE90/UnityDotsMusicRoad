@@ -94,11 +94,10 @@ public static class PlaneCollisionUtility
     /// <param name="linePointB"></param>
     /// <param name="hitPoint">stores the hit point if exists</param>
     /// <returns></returns>
-    public static bool ComputLineHit(PlaneStruct plane, float3 linePointA, float3 linePointB, out float3 hitPoint, out float3 interceptionPoint)
+    public static bool ComputLineHit(PlaneStruct plane, float3 linePointA, float3 linePointB, out float3 hitPoint)
     {
         hitPoint = float3.zero;
-        interceptionPoint = float3.zero;
-
+        
         float3 delta = linePointB - linePointA;
 
         var nominator = plane._displacement - (plane.Normal.x * linePointA.x) - (plane.Normal.y * linePointA.y) - (plane.Normal.z * linePointA.z);
@@ -120,11 +119,11 @@ public static class PlaneCollisionUtility
             linePointA.y + deltaScaled.y,
             linePointA.z + deltaScaled.z);
 
-        return IsInPlaneLimits(plane, hitPoint, out interceptionPoint);
+        return IsInPlaneLimits(plane, hitPoint);
     }
 
 
-    private static bool IsInPlaneLimits(PlaneStruct plane, float3 hitPoint, out float3 interceptionPoint)
+    private static bool IsInPlaneLimits(PlaneStruct plane, float3 hitPoint)
     {
        
         //Compute J component of the collision
@@ -185,7 +184,7 @@ public static class PlaneCollisionUtility
             }
         }
 
-        interceptionPoint = plane.PointB + g * j;
+        var interceptionPoint = plane.PointB + g * j;
 
         if (!converge)
             return false;

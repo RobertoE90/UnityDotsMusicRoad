@@ -31,37 +31,39 @@ public class CollisionUtility
     /// </summary>
     /// <param name="point"></param>
     /// <returns></returns>
-    public bool IsPointInsideMesh(float3 origin, float3 end, int displayIndex)
+    public bool IsPointInsideMesh(float3 origin)
     {
         if (_planes == null)
             return false;
 
-        //var hitCounter = 0;
-
+        var hitCounter = 0;
         var hit = false;
 
-        for (var j = 0; j < _planes.Length; j++)
+        var end = new float3(origin.x,-10f, origin.z);
+
+        for (var i = 0; i < _planes.Length; i++)
         {
-            if (j != displayIndex)
-                continue;
-
             float3 hitPoint = float3.zero;
-            float3 lineInterception = float3.zero;
-
+            
             hit = PlaneCollisionUtility.ComputLineHit(
-                _planes[j],
+                _planes[i],
                 origin,
                 end,
-                out hitPoint,
-                out lineInterception);
+                out hitPoint);
 
-            DrawPlaneGizmos(_planes[j], hitPoint, lineInterception, hit);
+            if (hit)
+            {
+                hitCounter++;
+                DrawPlaneGizmos(_planes[i], hitPoint, _planes[i].Normal);
+            }
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawLine(origin, end);
         }
 
-        return hit;
+        return hitCounter % 2 == 0;
     }
 
-    private void DrawPlaneGizmos(PlaneStruct plane, float3 hitPoint, float3 lineInterception, bool hit)
+    private void DrawPlaneGizmos(PlaneStruct plane, float3 hitPoint, float3 hitNormal)
     {
 
         Gizmos.color = Color.white;
@@ -78,8 +80,8 @@ public class CollisionUtility
         Gizmos.color = Color.magenta;
         Gizmos.DrawLine(plane.PointA, hitPoint);
 
-        Gizmos.color = hit ? Color.red : Color.blue;
+        Gizmos.color = Color.blue;
         Gizmos.DrawWireSphere(hitPoint, 0.05f);
-        Gizmos.DrawWireCube(lineInterception, Vector3.one * 0.05f);
+        Gizmos.DrawLine(hitPoint, hitPoint + hitNormal);
     }
 }

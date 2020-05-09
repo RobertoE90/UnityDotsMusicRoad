@@ -1,24 +1,25 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
 
 public class InsideTest : MonoBehaviour
 {
     [Range(0, 200)]
-    [SerializeField] private int _displayIndexValue;
-    [SerializeField] private Mesh _mesh;
+    [SerializeField] private GameObject _volumeMesh;
+    private Renderer _volumeRenderer;
     private CollisionUtility _collisionUtility;
 
     [SerializeField] private Transform _originPoint;
-    [SerializeField] private Transform _endPoint;
 
     void Start()
     {
         if (_collisionUtility == null)
             _collisionUtility = new CollisionUtility();
 
-        _collisionUtility.InitializeMesh(_mesh);
+        _volumeRenderer = _volumeMesh.GetComponent<Renderer>();
+        _collisionUtility.InitializeMesh(_volumeMesh.GetComponent<MeshFilter>().mesh);
     }
 
     public void OnDrawGizmos()
@@ -29,14 +30,12 @@ public class InsideTest : MonoBehaviour
         if (_collisionUtility == null)
             _collisionUtility = new CollisionUtility();
 
-        _displayIndexValue = Mathf.Clamp(_displayIndexValue, 0, _collisionUtility.Planes.Length);
-        var hitArray = _collisionUtility.IsPointInsideMesh(_originPoint.position, _endPoint.position, _displayIndexValue);
+        var insideMesh = _collisionUtility.IsPointInsideMesh(_originPoint.position);
+
+        Gizmos.color = insideMesh? Color.green : Color.red;
+        Gizmos.DrawWireSphere(_originPoint.position, 0.25f);
 
         Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(_originPoint.position, 0.25f);
-        Gizmos.DrawWireSphere(_endPoint.position, 0.25f);
-
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawLine(_originPoint.position, _endPoint.position);
+        Gizmos.DrawWireCube(_volumeRenderer.bounds.center, _volumeRenderer.bounds.size);
     }
 }
