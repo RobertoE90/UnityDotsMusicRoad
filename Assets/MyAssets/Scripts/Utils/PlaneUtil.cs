@@ -5,33 +5,6 @@ using Unity.Mathematics;
 using UnityEngine;
 
 
-[InternalBufferCapacity(8)]
-public struct CollisionMeshBufferData : IBufferElementData
-{
-    public PlaneStruct Plane;
-}
-
-public struct PlaneStruct: IComponentData
-{
-    public float3 PointA;
-    public float3 PointB;
-    public float3 PointC;
-
-    public float3 DeltaB;
-    public float3 DeltaC;
-
-    public float3 Normal;
-
-    public float _displacement;
-}
-
-
-public struct LineSegment3D : IComponentData
-{
-    public float3 origin;
-    public float3 end;
-}
-
 public static class PlaneCollisionUtility
 {
     /// <summary>
@@ -135,7 +108,7 @@ public static class PlaneCollisionUtility
         var divisor = 0f;
 
         var converge = false;
-
+        
         if(d.x != 0f && d.y != 0f)
         {
             divisor = (g.x / d.x) - (g.y / d.y);
@@ -150,6 +123,7 @@ public static class PlaneCollisionUtility
             }
         }
 
+        /*
         if (!converge)
         {
             if (d.z != 0f && d.x != 0f)
@@ -167,6 +141,7 @@ public static class PlaneCollisionUtility
             }
         }
         
+        /*
         if (!converge)
         {
             if (d.z != 0f && d.y != 0f)
@@ -183,6 +158,7 @@ public static class PlaneCollisionUtility
                 }
             }
         }
+        */
 
         var interceptionPoint = plane.PointB + g * j;
 
@@ -202,7 +178,7 @@ public static class PlaneCollisionUtility
         var gDot = math.dot(gInterception, g);
         
         var isInsidePlaneLimits = 
-            (gDot > 0f) && 
+            (gDot > 0f) &&
             (gInterceptionSqrtMagnitude < gSqrtMagnitude) &&
             (dDot > 0f) &&
             (dInterceptionSqrtMagnitude > dSqrtMagnitude);
