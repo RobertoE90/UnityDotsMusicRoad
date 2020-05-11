@@ -13,15 +13,15 @@ public class VoxelSpawnSystem : SystemBase
     private float _voxelScale;
 
     private bool _finish;
-    private int _voxelBatchSize;
-    private int _voxelCount;
-    private int _voxelTotal;
+    private int _raycastBatchSize;
+    private int _raycastCurrentCount;
+    private int _raycastTotalOperations;
 
     protected override void OnCreate()
     {
         _finish = false;
-        _voxelCount = 0;
-        _voxelBatchSize = 150;
+        _raycastCurrentCount = 0;
+        _raycastBatchSize = 10;
 
         _barrier = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
     }
@@ -43,9 +43,9 @@ public class VoxelSpawnSystem : SystemBase
 
         _boundSideVoxelCount = new int3((int)boundSizeLocal.x, (int)boundSizeLocal.y * 2, (int)boundSizeLocal.z * 2);
 
-        _voxelTotal = _boundSideVoxelCount.x * _boundSideVoxelCount.y * _boundSideVoxelCount.z;
+        _raycastTotalOperations = _boundSideVoxelCount.x * _boundSideVoxelCount.y * 2;
 
-        Debug.Log("Total of iterations " + _voxelTotal);
+        Debug.Log("Total of iterations " + _raycastTotalOperations);
     }
 
     protected override void OnStopRunning()
@@ -59,35 +59,37 @@ public class VoxelSpawnSystem : SystemBase
             return;
 
         var commandBuffer = _barrier.CreateCommandBuffer().ToConcurrent();
-        
+        var MaxElementsScale = _voxelScale;
+        var VolumePlanes = _volumePlanesArray;
+
         Entities
             .WithoutBurst()
             .ForEach((in VoxelsInitializerComponent voxelsInitializer) =>
             {
+                
+
                 var parallelInitEntityJob = new ParallelInitializationJob
                 {
                     BaseEntity = voxelsInitializer.VoxelEntityBase,
                     BoundBoxCenter = voxelsInitializer.VolumeBounds.center,
                     BoundBoxCount = _boundSideVoxelCount,
-                    BatchBeginIndex = _voxelCount,
-                    MaxElementsScale = _voxelScale, 
+                    BatchBeginIndex = _raycastCurrentCount,
+                    MaxElementsScale = _voxelScale,
                     CommandBuffer = commandBuffer,
                     VolumePlanes = _volumePlanesArray
                 };
 
-                if(_voxelCount + _voxelBatchSize > _voxelTotal)
-                {
-                    _voxelBatchSize = _voxelTotal - _voxelCount;
-                }
-
-                var jobHandler = parallelInitEntityJob.Schedule(_voxelBatchSize, (int)(math.ceil(_voxelBatchSize * 0.25f)));
+                if (_raycastCurrentCount + _raycastBatchSize > _raycastTotalOperations)
+                    _raycastBatchSize = _raycastTotalOperations - _raycastCurrentCount;
+                
+                var jobHandler = parallelInitEntityJob.Schedule(_raycastBatchSize, (int)(math.ceil(_raycastBatchSize * 0.25f)));
                 jobHandler.Complete();
+
             }).Run();
 
-        _voxelCount += _voxelBatchSize;
-
+        _raycastCurrentCount += _raycastBatchSize;
         _barrier.AddJobHandleForProducer(Dependency);
-        _finish = _voxelCount > _voxelTotal;
+        _finish = _raycastCurrentCount > _raycastTotalOperations;
     }
 
     private void InitializeVolumePlanes(Mesh volumeMesh)
@@ -120,78 +122,79 @@ public class VoxelSpawnSystem : SystemBase
 
         public void Execute(int index)
         {
-            var currentBatchIndex = BatchBeginIndex + index;
-
-            int sliceVoxelCount = BoundBoxCount.x * BoundBoxCount.y;
-
-            var z = currentBatchIndex / sliceVoxelCount;
-            var sliceRest = currentBatchIndex % sliceVoxelCount;
-
-            int x = sliceRest % BoundBoxCount.x;
-            int y = sliceRest / BoundBoxCount.x;
-
-            float3 position = float3.zero;
-
-            if (y % 2 == 0)
-                position = new float3(x + 0.5f, y * 0.5f, z * 0.5f) * MaxElementsScale;
-            else
-                position = new float3(x, y * 0.5f, z * 0.5f) * MaxElementsScale;
-
-            if (z % 2 == 0)
-                position += new float3(0.5f, 0, 0f) * MaxElementsScale;
-
-            position -= new float3(BoundBoxCount.x, BoundBoxCount.y * 0.5f, BoundBoxCount.z * 0.5f) * 0.5f * MaxElementsScale;
-            position += BoundBoxCenter;
+            var currentIndex = index + BatchBeginIndex;
+            int x = currentIndex % BoundBoxCount.x;
+            int y = currentIndex / BoundBoxCount.x;
             
-            var isPointInsideMesh = IsPointInsideMesh(position);
-            //isPointInsideMesh = true;
-            if (isPointInsideMesh)
-            {
-                var entity = CommandBuffer.Instantiate(index, BaseEntity);
-                CommandBuffer.SetComponent<Translation>(index, entity, new Translation { Value = position });
-                CommandBuffer.SetComponent<Scale>(index, entity, new Scale { Value = MaxElementsScale });
-            }
-        }
+            float3 pointA = float3.zero;
+            if (y % 2 == 0)
+                pointA = new float3(x + 0.5f, y * 0.25f, BoundBoxCount.z * 0.5f) * MaxElementsScale;
+            else
+                pointA = new float3(x, y * 0.25f, BoundBoxCount.z * 0.5f) * MaxElementsScale;
 
+            pointA -= new float3(BoundBoxCount.x, BoundBoxCount.y * 0.5f, (BoundBoxCount.z - 2) * 0.5f) * 0.5f * MaxElementsScale;
 
-        private bool IsPointInsideMesh(float3 origin)
-        {
-            //if (VolumePlanes == null)
-            //    return false;
+            float3 pointB = pointA - new float3(0, 0, BoundBoxCount.z + 2) * 0.5f * MaxElementsScale;
 
-            var hitTest = false;
+            pointA += BoundBoxCenter;
+            pointB += BoundBoxCenter;
 
-            var hitCounterA = 0;
-            var endA = new float3(2.4f, -10f, 3.1f);
+            float3 hitPoint;
 
-            var hitCounterB = 0;
-            var endB = new float3(4.6f, -10f, -3.1f);
-
-            float3 hitPoint = float3.zero;
-
+            var hitPoints = new NativeList<float>(Allocator.Temp);
             for (var i = 0; i < VolumePlanes.Length; i++)
             {
-                
-                hitTest = PlaneCollisionUtility.ComputLineHit(
+                var hitTest = PlaneCollisionUtility.ComputLineHit(
                     VolumePlanes[i],
-                    origin,
-                    endA,
+                    pointA,
+                    pointB,
                     out hitPoint);
 
                 if (hitTest)
-                    hitCounterA++;
+                {
+                    var merge = false;
+                    for (var j = 0; j < hitPoints.Length; j++)
+                    {
+                        if (math.abs(hitPoint.z - hitPoints[j]) < MaxElementsScale * 0.25f)
+                        {
+                            merge = true;
+                            break;
+                        }
+                    }
 
-                hitTest = PlaneCollisionUtility.ComputLineHit(
-                    VolumePlanes[i],
-                    origin,
-                    endB,
-                    out hitPoint);
-
-                if (hitTest)
-                    hitCounterB++;
+                    if(!merge)
+                        hitPoints.Add(hitPoint.z);
+                }
             }
 
-            return hitCounterA % 2 == 1 && hitCounterB % 2 == 1;
+            hitPoints.Sort();
+
+            if (hitPoints.Length != 0 && hitPoints.Length % 2 == 0)
+            {
+                for (var i = 0; i < hitPoints.Length; i += 2)
+                {
+                    var depth = hitPoints[i] - hitPoints[i + 1];
+                    int depthInt = (int)(depth / MaxElementsScale);
+                    depth = math.abs(depthInt * MaxElementsScale);
+
+                    int parallelPointZint = (int)(hitPoints[i] / MaxElementsScale);
+                    pointA.z = parallelPointZint * MaxElementsScale;
+
+                    var flipSize = false;
+                    for (var d = 0f; d <= depth * 2; d += MaxElementsScale)
+                    {
+                        var position = pointA + new float3(0, 0, d * 0.5f);
+                        if (flipSize)
+                            position -= new float3(0.5f, 0, 0f) * MaxElementsScale;
+                        flipSize = !flipSize;
+
+                        var entity = CommandBuffer.Instantiate(index, BaseEntity);
+                        CommandBuffer.SetComponent<Translation>(index, entity, new Translation { Value = position });
+                        CommandBuffer.SetComponent<Scale>(index, entity, new Scale { Value = MaxElementsScale });
+                    }
+                }
+            }
+            hitPoints.Dispose();
         }
     }
 }

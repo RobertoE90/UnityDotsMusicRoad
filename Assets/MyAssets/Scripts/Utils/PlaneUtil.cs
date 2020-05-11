@@ -123,7 +123,7 @@ public static class PlaneCollisionUtility
             }
         }
 
-        /*
+        
         if (!converge)
         {
             if (d.z != 0f && d.x != 0f)
@@ -141,7 +141,7 @@ public static class PlaneCollisionUtility
             }
         }
         
-        /*
+        
         if (!converge)
         {
             if (d.z != 0f && d.y != 0f)
@@ -158,7 +158,6 @@ public static class PlaneCollisionUtility
                 }
             }
         }
-        */
 
         var interceptionPoint = plane.PointB + g * j;
 
@@ -179,9 +178,9 @@ public static class PlaneCollisionUtility
         
         var isInsidePlaneLimits = 
             (gDot > 0f) &&
-            (gInterceptionSqrtMagnitude < gSqrtMagnitude) &&
+            (gInterceptionSqrtMagnitude <= gSqrtMagnitude) &&
             (dDot > 0f) &&
-            (dInterceptionSqrtMagnitude > dSqrtMagnitude);
+            (dInterceptionSqrtMagnitude >= dSqrtMagnitude);
         
         return isInsidePlaneLimits;
 
