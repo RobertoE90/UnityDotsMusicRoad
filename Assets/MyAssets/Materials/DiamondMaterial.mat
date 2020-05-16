@@ -123,7 +123,7 @@ Material:
     m_Floats:
     - Vector1_32FD9E88: 0.55
     - Vector1_57CC7836: 15
-    - Vector1_D2D50F76: 0.565
+    - Vector1_D2D50F76: 0.338
     - _AORemapMax: 1
     - _AORemapMin: 0
     - _ATDistance: 1
@@ -248,7 +248,7 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - Color_17AD9F7C: {r: 0, g: 0, b: 0, a: 0}
-    - Color_A49589DF: {r: 98175.5, g: 0, b: 0, a: 1}
+    - Color_A49589DF: {r: 766.9961, g: 0, b: 0, a: 1}
     - Color_CCF5C4FD: {r: 2, g: 0, b: 0, a: 1}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BaseColorMap_MipInfo: {r: 0, g: 0, b: 0, a: 0}
