@@ -87,8 +87,6 @@ public class CarController : MonoBehaviour
         _movementSpeed += _currentAsceleration * Time.deltaTime;
         _movementSpeed = Mathf.Clamp(_movementSpeed, 0f, _maxSpeed);
 
-        Debug.Log(_movementSpeed);
-
         transform.position += transform.right * _movementSpeed * Time.deltaTime;
     }
 

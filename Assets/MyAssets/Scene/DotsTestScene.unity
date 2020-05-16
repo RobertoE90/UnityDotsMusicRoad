@@ -380,7 +380,7 @@ PrefabInstance:
     - target: {fileID: 6840771577038812424, guid: 3a7fe63d533dc6643baabc3a81d2f66b,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3a7fe63d533dc6643baabc3a81d2f66b, type: 3}
@@ -1096,6 +1096,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9631a69019bed3e49a3ed953831bdf24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _voxelScale: 0.5
   _voxelPrefab: {fileID: 6840771577038812424, guid: 3a7fe63d533dc6643baabc3a81d2f66b,
     type: 3}
   _volumeGameObject: {fileID: 1506266127}

@@ -11,7 +11,7 @@ public class VoxelSpawnSystem : SystemBase
     private NativeArray<PlaneStruct> _volumePlanesArray;
     private int3 _boundSideVoxelCount;
     private float _voxelScale;
-
+    private float4x4 _meshLocalToWorldMatrix;
     private bool _finish;
     private int _raycastBatchSize;
     private int _raycastCurrentCount;
@@ -36,7 +36,8 @@ public class VoxelSpawnSystem : SystemBase
             .ForEach((in VoxelsInitializerComponent voxelsInitializer) =>
             {
                 InitializeVolumePlanes(voxelsInitializer.VolumeMesh);
-                
+                _voxelScale = voxelsInitializer.VoxelScale;
+                _meshLocalToWorldMatrix = voxelsInitializer.TransformMatrix;
                 boundSizeLocal = voxelsInitializer.VolumeBounds.size / _voxelScale;
 
             }).Run();
@@ -71,6 +72,7 @@ public class VoxelSpawnSystem : SystemBase
                 var parallelInitEntityJob = new ParallelInitializationJob
                 {
                     BaseEntity = voxelsInitializer.VoxelEntityBase,
+                    LocalToWoldMatrix = _meshLocalToWorldMatrix,
                     BoundBoxCenter = voxelsInitializer.VolumeBounds.center,
                     BoundBoxCount = _boundSideVoxelCount,
                     BatchBeginIndex = _raycastCurrentCount,
@@ -113,6 +115,7 @@ public class VoxelSpawnSystem : SystemBase
     private struct ParallelInitializationJob : IJobParallelFor
     {
         public Entity BaseEntity;
+        public float4x4 LocalToWoldMatrix;
         public float3 BoundBoxCenter;
         public int3 BoundBoxCount;
         public int BatchBeginIndex;
@@ -155,7 +158,7 @@ public class VoxelSpawnSystem : SystemBase
                     var merge = false;
                     for (var j = 0; j < hitPoints.Length; j++)
                     {
-                        if (math.abs(hitPoint.z - hitPoints[j]) < MaxElementsScale * 0.25f)
+                        if (math.abs(hitPoint.z - hitPoints[j]) < MaxElementsScale * 0.05f)
                         {
                             merge = true;
                             break;
@@ -175,6 +178,7 @@ public class VoxelSpawnSystem : SystemBase
                 {
                     var depth = hitPoints[i] - hitPoints[i + 1];
                     int depthInt = (int)(depth / MaxElementsScale);
+                         
                     depth = math.abs(depthInt * MaxElementsScale);
 
                     int parallelPointZint = (int)(hitPoints[i] / MaxElementsScale);
@@ -188,9 +192,14 @@ public class VoxelSpawnSystem : SystemBase
                             position -= new float3(0.5f, 0, 0f) * MaxElementsScale;
                         flipSize = !flipSize;
 
+                        var homoPosition = new float4(position, 1);
+
+                        homoPosition = math.mul(LocalToWoldMatrix, homoPosition);
+
+
                         var entity = CommandBuffer.Instantiate(index, BaseEntity);
-                        CommandBuffer.SetComponent<Translation>(index, entity, new Translation { Value = position });
-                        CommandBuffer.SetComponent<Scale>(index, entity, new Scale { Value = MaxElementsScale });
+                        CommandBuffer.SetComponent<Translation>(index, entity, new Translation { Value = homoPosition.xyz });
+                        //CommandBuffer.SetComponent<Scale>(index, entity, new Scale { Value = MaxElementsScale });
                     }
                 }
             }

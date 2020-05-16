@@ -8,6 +8,7 @@ using UnityEngine;
 
 public class InitVoxelEntity : MonoBehaviour, IConvertGameObjectToEntity
 {
+    [SerializeField] private float _voxelScale;
     [SerializeField] private GameObject _voxelPrefab;
     [SerializeField] private GameObject _volumeGameObject;
     public void Convert(Entity entity, EntityManager dstManager, GameObjectConversionSystem conversionSystem)
@@ -40,19 +41,24 @@ public class InitVoxelEntity : MonoBehaviour, IConvertGameObjectToEntity
 
         dstManager.AddSharedComponentData<VoxelsInitializerComponent>(entity, new VoxelsInitializerComponent
         {
+            VoxelScale = _voxelScale,
+            TransformMatrix = _volumeGameObject.transform.localToWorldMatrix,
             VolumeBounds = volumeMesh.bounds,
             VoxelEntityBase = voxelEntity,
             VolumeMesh = volumeMesh
-        });
+        }); ;
     }
 }
 
 
 public struct VoxelsInitializerComponent : ISharedComponentData, IEquatable<VoxelsInitializerComponent>
 {
+    public float VoxelScale;
+    public float4x4 TransformMatrix;
     public Bounds VolumeBounds;
     public Entity VoxelEntityBase;
     public Mesh VolumeMesh;
+
 
     public bool Equals(VoxelsInitializerComponent other)
     {
