@@ -27,7 +27,8 @@ public class ModifierSystem : JobComponentSystem
             .WithAll<VoxelTagComponent>()
             .ForEach((ref Scale scale, in NoiseValue noise) =>
             {
-                scale.Value = noise.Value * maxScale;
+                //scale.Value = noise.Value * maxScale;
+                scale.Value = maxScale;
             }).Schedule(inputDeps);
 
         return jobHandler;
